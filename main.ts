@@ -4,15 +4,19 @@
    using the bounty's own caps. Runs twice with identical bytes:
    the copy is a plain recursive copy and the dossier is deterministic. */
 
-import { cpSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { buildDossier } from './vendor/makefun-game.ts';
 
 const outDir = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
 const rootDir = new URL('.', import.meta.url).pathname;
 
-rmSync(outDir, { recursive: true, force: true });
 mkdirSync(outDir, { recursive: true });
+// Never remove outDir itself: on the grader it is a bind mount, and
+// rmSync on it throws EBUSY. Empty its contents instead.
+for (const child of readdirSync(outDir)) {
+  rmSync(join(outDir, child), { recursive: true, force: true });
+}
 
 for (const dir of ['game', 'screenshots']) {
   cpSync(join(rootDir, dir), join(outDir, dir), { recursive: true });
